@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Выбор карт Таро</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: url('fon.jpg') no-repeat center center fixed;
+            background-size: cover;
+            font-family: Arial, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            color: white;
+            max-width: 90%;
+        }
+
+        .timer {
+            font-size: 18px;
+            font-weight: bold;
+            color: #e74c3c;
+            margin-bottom: 15px;
+        }
+
+        .instructions {
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .cards-container {
+            margin: 20px 0;
+        }
+
+        .card {
+            width: 80px;
+            height: 120px;
+            background: url('card.jpg') no-repeat center center;
+            background-size: cover;
+            border: 3px solid transparent;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-block;
+            margin: 5px;
+        }
+
+        .card.selected {
+            border-color: #e74c3c;
+            box-shadow: 0 0 20px rgba(231, 76, 60, 0.7);
+            transform: scale(1.1);
+        }
+
+        .card.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        button {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: background 0.3s ease;
+        }
+
+        button:hover:not(:disabled) {
+            background: #c0392b;
+        }
+
+        button:disabled {
+            background: #7f8c8d;
+            cursor: not-allowed;
+        }
+
+        .counter {
+            margin: 10px 0;
+            font-size: 16px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="instructions">🎴 Выберите 3 карты для расклада</div>
+        <div class="timer" id="timer">⏰ Осталось: 30 секунд</div>
+
+        <div class="cards-container">
+            <div class="card" data-index="1"></div>
+            <div class="card" data-index="2"></div>
+            <div class="card" data-index="3"></div>
+            <div class="card" data-index="4"></div>
+            <div class="card" data-index="5"></div>
+        </div>
+
+        <div class="counter">Выбрано: <span id="selectedCount">0</span>/3</div>
+
+        <button id="confirmBtn" disabled>✅ Завершить выбор</button>
+    </div>
+
+    <script>
+        console.log("🔄 WebApp initializing...");
+
+        const tg = window.Telegram.WebApp;
+        let selectedCards = [];
+        let timeLeft = 30;
+        let timerInterval;
+
+        // Инициализация
+        tg.expand();
+        tg.BackButton.hide();
+        console.log("✅ WebApp initialized");
+
+        // Таймер
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timer').textContent = `⏰ Осталось: ${timeLeft} секунд`;
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    closeWebApp();
+                }
+            }, 1000);
+        }
+
+        // Закрытие Web App
+        function closeWebApp() {
+            console.log("🔄 Closing WebApp...");
+            tg.close();
+        }
+
+        // Обработчики выбора карт
+        document.querySelectorAll('.card').forEach(card => {
+            card.addEventListener('click', function () {
+                if (timeLeft <= 0) return;
+
+                const index = parseInt(this.dataset.index);
+                console.log(`🃏 Card ${index} clicked`);
+
+                if (this.classList.contains('selected')) {
+                    // Убираем выделение
+                    this.classList.remove('selected');
+                    selectedCards = selectedCards.filter(i => i !== index);
+                    console.log(`➖ Card ${index} deselected`);
+                } else {
+                    // Добавляем выделение
+                    if (selectedCards.length < 3) {
+                        this.classList.add('selected');
+                        selectedCards.push(index);
+                        console.log(`➕ Card ${index} selected`);
+                    } else {
+                        console.log("⚠️ Maximum 3 cards already selected");
+                    }
+                }
+
+                updateUI();
+            });
+        });
+
+        // Кнопка подтверждения
+        document.getElementById('confirmBtn').addEventListener('click', function () {
+            console.log("✅ Confirm button clicked");
+            console.log(`🎴 Selected cards: ${selectedCards}`);
+            closeWebApp();
+        });
+
+        function updateUI() {
+            const selectedCount = selectedCards.length;
+            document.getElementById('selectedCount').textContent = selectedCount;
+            document.getElementById('confirmBtn').disabled = selectedCount !== 3;
+
+            // Блокируем лишние карты если выбрано 3
+            document.querySelectorAll('.card').forEach(card => {
+                const index = parseInt(card.dataset.index);
+                if (!card.classList.contains('selected') && selectedCount >= 3) {
+                    card.classList.add('disabled');
+                } else {
+                    card.classList.remove('disabled');
+                }
+            });
+
+            console.log(`📊 UI updated: ${selectedCount}/3 cards selected`);
+        }
+
+        // Запускаем таймер при загрузке
+        startTimer();
+
+        console.log("🚀 WebApp ready!");
+    </script>
+</body>
+
+</html>
